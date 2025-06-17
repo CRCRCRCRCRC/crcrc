@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>短網址產生器</title>
+  <style>
+    body {
+      font-family: "微軟正黑體", sans-serif;
+      background-color: #f2f2f2;
+      padding: 40px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    h1 {
+      font-size: 32px;
+      margin-bottom: 20px;
+    }
+    input[type="text"] {
+      width: 300px;
+      padding: 10px;
+      margin: 5px 0;
+      font-size: 16px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      margin-top: 10px;
+      cursor: pointer;
+      background-color: #4caf50;
+      color: white;
+      border: none;
+      border-radius: 6px;
+    }
+    button:hover {
+      background-color: #45a049;
+    }
+    #result {
+      margin-top: 20px;
+      font-size: 18px;
+      color: green;
+      word-break: break-all;
+    }
+  </style>
+</head>
+<body>
+  <h1>短網址產生器</h1>
+  <input id="longUrl" type="text" placeholder="請輸入原始網址 (例如 https://google.com)" />
+  <input id="customCode" type="text" placeholder="自訂短碼（可留空）" />
+  <button onclick="shorten()">產生短網址</button>
+  <div id="result"></div>
+  <script>
+    async function shorten() {
+      const longUrl = document.getElementById("longUrl").value.trim();
+      const customCode = document.getElementById("customCode").value.trim();
+      const resultDiv = document.getElementById("result");
+      resultDiv.textContent = "";
+      if (!longUrl.startsWith("http")) {
+        resultDiv.textContent = "請輸入正確格式的網址（例如 https://xxx）";
+        return;
+      }
+      try {
+        const res = await fetch("/api/shorten", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url: longUrl, customCode }),
+        });
+        const data = await res.json();
+        if (data.shortUrl) {
+          resultDiv.innerHTML = `✅ 成功產生短網址：<br><a href="${data.shortUrl}" target="_blank">${data.shortUrl}</a>`;
+        } else {
+          resultDiv.textContent = `❌ 錯誤：${data.error || "未知錯誤"}`;
+        }
+      } catch (err) {
+        resultDiv.textContent = "❌ 系統錯誤，請稍後再試";
+      }
+    }
+  </script>
+</body>
+</html>
