@@ -1,3 +1,4 @@
+// ✅ 使用 ES Module 語法
 import { MongoClient } from 'mongodb';
 import { customAlphabet } from 'nanoid';
 
@@ -15,7 +16,7 @@ export default async function handler(req, res) {
     if (!url) return res.status(400).json({ error: 'Missing URL' });
 
     await client.connect();
-    const db = client.db('shortener'); // ✅ 確保有這個 DB 名稱
+    const db = client.db('shortener');
     const collection = db.collection('urls');
 
     const short = custom || nanoid();
@@ -27,6 +28,6 @@ export default async function handler(req, res) {
     return res.status(200).json({ short });
   } catch (err) {
     console.error('❌ API ERROR:', err);
-    return res.status(500).json({ error: 'Server error' });
+    return res.status(500).json({ error: 'Server error', detail: err.message });
   }
 }
