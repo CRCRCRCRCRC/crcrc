@@ -1,8 +1,8 @@
 {
-  "name": "crcrc",
+  "name": "url-shortener-mongodb",
   "version": "1.0.0",
   "type": "module",
   "dependencies": {
-    "nanoid": "^5.0.2"
+    "mongodb": "^6.7.0"
   }
 }
