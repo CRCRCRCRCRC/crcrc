@@ -2,7 +2,7 @@
   "name": "url-shortener",
   "version": "1.0.0",
   "description": "簡易短網址產生器",
-  "main": "index.js",
+  "type": "module",
   "scripts": {
     "dev": "vercel dev",
     "start": "node api/shorten.js"
