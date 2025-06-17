@@ -1,34 +1,32 @@
-import { MongoClient } from "mongodb";
+import { MongoClient } from 'mongodb';
+import { customAlphabet } from 'nanoid';
 
-const client = new MongoClient(process.env.MONGO_URI);
-const dbName = process.env.DB_NAME || "shortener";
+const uri = process.env.MONGO_URI;
+const client = new MongoClient(uri);
+const nanoid = customAlphabet('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz', 6);
 
 export default async function handler(req, res) {
-  if (req.method !== "POST") return res.status(405).end("Method Not Allowed");
-
-  const { url, customCode } = req.body;
-
-  if (!url || !url.startsWith("http")) {
-    return res.status(400).json({ error: "無效網址" });
-  }
-
-  const code = (customCode || Math.random().toString(36).slice(2, 8)).trim();
-  if (!/^[a-zA-Z0-9_-]+$/.test(code)) {
-    return res.status(400).json({ error: "短碼只能包含英數字、- 或 _" });
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
   }
 
   try {
+    const { url, custom } = req.body;
+    if (!url) return res.status(400).json({ error: 'Missing URL' });
+
     await client.connect();
-    const db = client.db(dbName);
-    const urls = db.collection("urls");
+    const db = client.db('shortener'); // ✅ 確保有這個 DB 名稱
+    const collection = db.collection('urls');
 
-    const exists = await urls.findOne({ code });
-    if (exists) return res.status(409).json({ error: "這個短碼已經被使用了" });
+    const short = custom || nanoid();
 
-    await urls.insertOne({ code, url });
-    const baseUrl = req.headers.origin || `https://${req.headers.host}`;
-    res.status(200).json({ shortUrl: `${baseUrl}/${code}` });
+    const exists = await collection.findOne({ short });
+    if (exists) return res.status(409).json({ error: 'Short code already exists' });
+
+    await collection.insertOne({ short, url });
+    return res.status(200).json({ short });
   } catch (err) {
-    res.status(500).json({ error: "伺服器錯誤" });
+    console.error('❌ API ERROR:', err);
+    return res.status(500).json({ error: 'Server error' });
   }
 }
