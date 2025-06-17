@@ -1,8 +1,14 @@
 {
-  "name": "url-shortener-mongodb",
+  "name": "url-shortener",
   "version": "1.0.0",
-  "type": "module",
+  "description": "簡易短網址產生器",
+  "main": "index.js",
+  "scripts": {
+    "dev": "vercel dev",
+    "start": "node api/shorten.js"
+  },
   "dependencies": {
-    "mongodb": "^6.7.0"
+    "mongodb": "^5.7.0",
+    "nanoid": "^5.0.2"
   }
 }
