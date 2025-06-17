@@ -1,50 +1,34 @@
-import fs from 'fs';
-import path from 'path';
+import { MongoClient } from "mongodb";
 
-const filePath = path.resolve('./data.json');
+const client = new MongoClient(process.env.MONGO_URI);
+const dbName = process.env.DB_NAME || "shortener";
 
 export default async function handler(req, res) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method Not Allowed' });
-  }
+  if (req.method !== "POST") return res.status(405).end("Method Not Allowed");
 
   const { url, customCode } = req.body;
 
-  if (!url || !url.startsWith('http')) {
-    return res.status(400).json({ error: '無效網址' });
+  if (!url || !url.startsWith("http")) {
+    return res.status(400).json({ error: "無效網址" });
   }
 
-  const code = (customCode || Math.random().toString(36).substr(2, 6)).trim();
-
+  const code = (customCode || Math.random().toString(36).slice(2, 8)).trim();
   if (!/^[a-zA-Z0-9_-]+$/.test(code)) {
-    return res.status(400).json({ error: '短碼只能包含英數字、- 或 _' });
+    return res.status(400).json({ error: "短碼只能包含英數字、- 或 _" });
   }
 
-  const db = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
-  if (db[code]) {
-    return res.status(409).json({ error: '這個短碼已經被使用了' });
-  }
+  try {
+    await client.connect();
+    const db = client.db(dbName);
+    const urls = db.collection("urls");
 
-  db[code] = url;
-  fs.writeFileSync(filePath, JSON.stringify(db, null, 2));
+    const exists = await urls.findOne({ code });
+    if (exists) return res.status(409).json({ error: "這個短碼已經被使用了" });
 
-  res.status(200).json({ shortUrl: `${req.headers.origin}/${code}` });
-}
-
-// api/r/[code].js
-import fs from 'fs';
-import path from 'path';
-
-const filePath = path.resolve('./data.json');
-
-export default async function handler(req, res) {
-  const { code } = req.query;
-  const db = JSON.parse(fs.readFileSync(filePath, 'utf-8'));
-
-  if (db[code]) {
-    res.writeHead(302, { Location: db[code] });
-    res.end();
-  } else {
-    res.status(404).send("短網址不存在");
+    await urls.insertOne({ code, url });
+    const baseUrl = req.headers.origin || `https://${req.headers.host}`;
+    res.status(200).json({ shortUrl: `${baseUrl}/${code}` });
+  } catch (err) {
+    res.status(500).json({ error: "伺服器錯誤" });
   }
 }
